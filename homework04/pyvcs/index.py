@@ -68,7 +68,7 @@ def read_index(gitdir: pathlib.Path):
         for element in range(amount):
             entry = entr[:62]
             in_len = struct.unpack("!H", entry[60:])[0]
-            name = entries[62 : 62 + in_len].decode()
+            name = entr[62 : 62 + in_len].decode()
             (
                 ctime_s,
                 ctime_n,
@@ -101,10 +101,10 @@ def read_index(gitdir: pathlib.Path):
             indexes.append(class_ind)
             entr = entr[62 + in_len :]
             D = 0
-            while entries[:D].replace(b"\x00", b"") == b"":
+            while entr[:D].replace(b"\x00", b"") == b"":
                 D += 1
             D = D - 1 if D > 0 else 0
-            entr = entr[S:]
+            entr = entr[D:]
         return indexes
 
 
