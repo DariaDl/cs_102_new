@@ -48,9 +48,7 @@ class GitIndexEntry(tp.NamedTuple):
 
     @staticmethod
     def unpack(data: bytes) -> "GitIndexEntry":
-        index_unpacked_things = struct.unpack(
-            "!LLLLLLLLLL20sH" + str(len(data) - 62) + "s", data
-        )
+        index_unpacked_things = struct.unpack("!LLLLLLLLLL20sH" + str(len(data) - 62) + "s", data)
         return GitIndexEntry(
             *(
                 list(index_unpacked_things[:-1])
@@ -128,11 +126,7 @@ def ls_files(gitdir: pathlib.Path, details: bool = False) -> None:
     for entry in read_index(gitdir):
         if details:
             stage = (entry.flags >> 12) & 3
-            print(
-                "{:6o} {} {:}\t{}".format(
-                    entry.mode, entry.sha1.hex(), stage, entry.path
-                )
-            )
+            print("{:6o} {} {:}\t{}".format(entry.mode, entry.sha1.hex(), stage, entry.path))
         else:
             print(entry.path)
 
@@ -172,4 +166,3 @@ def update_index(
         for name in sorted(entry.keys()):
             entry_list.append(entry[name])
         write_index(gitdir, entry_list)
-
