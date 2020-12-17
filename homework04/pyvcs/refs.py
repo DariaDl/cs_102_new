@@ -6,13 +6,13 @@ def update_ref(gitdir: pathlib.Path, ref: tp.Union[str, pathlib.Path], new_value
     with open((gitdir / ref), "w") as file:
         file.write(new_value)
 
+
 def symbolic_ref(gitdir: pathlib.Path, name: str, ref: str) -> None:
-    ref_f = gitdir / name
-    with (ref_f).open("w") as f:
-        f.write(ref)
+    with open(gitdir / name, "w") as file:
+        file.write("ref: " + ref)
 
 
-def ref_resolve(gitdir: pathlib.Path, refname: str) -> str:
+def ref_resolve(gitdir: pathlib.Path, refname: str) -> tp.Optional[str]:
     if refname == "HEAD" and not is_detached(gitdir):
         return resolve_head(gitdir)
     if (gitdir / refname).exists():
