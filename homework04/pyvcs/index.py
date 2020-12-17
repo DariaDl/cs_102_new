@@ -57,7 +57,7 @@ class GitIndexEntry(tp.NamedTuple):
         )
 
 
-def read_index(gitdir: pathlib.Path) -> tp.List[GitIndexEntry]:
+def read_index(gitdir: pathlib.Path):
     ind = []
     if not os.path.exists(str(gitdir) + os.path.sep + "index"):
         return ind
