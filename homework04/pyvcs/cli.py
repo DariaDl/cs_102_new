@@ -19,7 +19,7 @@ def cmd_hash_object(args: argparse.Namespace) -> None:
         data = f.read()
 
     final = hash_object(data, args.type, args.write)
-    return final
+    print(final)
 
 
 def cmd_cat_file(args: argparse.Namespace) -> None:
@@ -40,13 +40,13 @@ def cmd_write_tree(args: argparse.Namespace) -> None:
     gitdir = repo_find()
     entries = read_index(gitdir)
     final = write_tree(gitdir, entries)
-    return final
+    print(final)
 
 
 def cmd_commit_tree(args: argparse.Namespace) -> None:
     gitdir = repo_find()
     final = commit_tree(gitdir, args.tree, args.message, args.parent)
-    return final
+    print(final)
 
 
 def cmd_update_ref(args: argparse.Namespace) -> None:
@@ -57,7 +57,7 @@ def cmd_update_ref(args: argparse.Namespace) -> None:
 def cmd_rev_parse(args: argparse.Namespace) -> None:
     gitdir = repo_find()
     final = ref_resolve(gitdir, args.rev)
-    return final
+    print(final)
 
 
 def cmd_symbolic_ref(args: argparse.Namespace) -> None:
@@ -68,7 +68,7 @@ def cmd_symbolic_ref(args: argparse.Namespace) -> None:
 def cmd_commit(args: argparse.Namespace) -> None:
     gitdir = repo_find()
     final = commit(gitdir, args.message, args.author)
-    return final
+    print(final)
 
 
 def cmd_checkout(args: argparse.Namespace) -> None:
