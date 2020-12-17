@@ -18,8 +18,8 @@ def cmd_hash_object(args: argparse.Namespace) -> None:
     with args.path.open(mode="rb") as f:
         data = f.read()
 
-    sha1 = hash_object(data, args.type, args.write)
-    print(sha1)
+    sha = hash_object(data, args.type, args.write)
+    print(sha)
 
 
 def cmd_cat_file(args: argparse.Namespace) -> None:
@@ -38,43 +38,6 @@ def cmd_update_index(args: argparse.Namespace) -> None:
 
 def cmd_write_tree(args: argparse.Namespace) -> None:
     gitdir = repo_find()
-    entries = read_index(gitdir)
-    sha = write_tree(gitdir, entries)
-    print(sha)
-
-
-def cmd_commit_tree(args: argparse.Namespace) -> None:
-    gitdir = repo_find()
-    sha = commit_tree(gitdir, args.tree, args.message, args.parent)
-    print(sha)
-
-
-def cmd_update_ref(args: argparse.Namespace) -> None:
-    gitdir = repo_find()
-    update_ref(gitdir, args.ref, args.newvalue)
-
-
-def cmd_rev_parse(args: argparse.Namespace) -> None:
-    gitdir = repo_find()
-    sha = ref_resolve(gitdir, args.rev)
-    print(sha)
-
-
-def cmd_symbolic_ref(args: argparse.Namespace) -> None:
-    gitdir = repo_find()
-    symbolic_ref(gitdir, args.name, args.ref)
-
-
-def cmd_commit(args: argparse.Namespace) -> None:
-    gitdir = repo_find()
-    sha = commit(gitdir, args.message, args.author)
-    print(sha)
-
-
-def cmd_checkout(args: argparse.Namespace) -> None:
-    gitdir = repo_find()
-    checkout(gitdir, args.obj_name)
-
     entries = read_index(gitdir)
     sha = write_tree(gitdir, entries)
     print(sha)
