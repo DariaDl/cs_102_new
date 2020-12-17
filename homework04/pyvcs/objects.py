@@ -17,7 +17,7 @@ def hash_object(data: bytes, fmt: str, write: bool = False) -> str:
         gitdir = repo_find()
         if not (gitdir / objects / final[:2]).exists():
             (gitdir / objects / final[:2]).mkdir()
-        with (gitdir / objects / final[:2] / sha[2:]).open("wb") as file:
+        with (gitdir / objects / final[:2] / final[2:]).open("wb") as file:
             file.write(zlib.compress((fmt + " " + str(len(data))).encode() + b"\00" + data))
     return final
 
