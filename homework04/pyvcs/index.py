@@ -23,7 +23,6 @@ class GitIndexEntry(tp.NamedTuple):
     sha1: bytes
     flags: int
     name: str
-    path: str
 
     def pack(self) -> bytes:
         return struct.pack(
@@ -49,7 +48,9 @@ class GitIndexEntry(tp.NamedTuple):
 
     @staticmethod
     def unpack(data: bytes) -> "GitIndexEntry":
-        index_unpacked_things = struct.unpack("!LLLLLLLLLL20sH" + str(len(data) - 62) + "s", data)
+        index_unpacked_things = struct.unpack(
+            "!LLLLLLLLLL20sH" + str(len(data) - 62) + "s", data
+        )
         return GitIndexEntry(
             *(
                 list(index_unpacked_things[:-1])
@@ -59,7 +60,7 @@ class GitIndexEntry(tp.NamedTuple):
 
 
 def read_index(gitdir: pathlib.Path) -> tp.List[GitIndexEntry]:
-    ind = []  # type : List[str]
+    ind = []
     if not os.path.exists(str(gitdir) + os.path.sep + "index"):
         return ind
     with open(str(gitdir) + os.path.sep + "index", "rb") as f:
@@ -128,13 +129,17 @@ def ls_files(gitdir: pathlib.Path, details: bool = False) -> None:
         if details:
             stage = (entry.flags >> 12) & 3
             print(
-                "{:6o} {} {:}\t{}".format(entry.mode, entry.sha1.hex(), stage, entry.path)
-            )  # type : ignore
+                "{:6o} {} {:}\t{}".format(
+                    entry.mode, entry.sha1.hex(), stage, entry.path
+                )
+            )
         else:
-            print(entry.path)  # type : ignore
+            print(entry.path)
 
 
-def update_index(gitdir: pathlib.Path, paths: tp.List[pathlib.Path], write: bool = True) -> None:
+def update_index(
+    gitdir: pathlib.Path, paths: tp.List[pathlib.Path], write: bool = True
+) -> None:
     entry = {entry.name: entry for entry in read_index(gitdir)}
     for path in paths:
         if str(path) in entry:
