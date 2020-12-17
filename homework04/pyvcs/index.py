@@ -23,6 +23,7 @@ class GitIndexEntry(tp.NamedTuple):
     sha1: bytes
     flags: int
     name: str
+    path: str
 
     def pack(self) -> bytes:
         return struct.pack(
@@ -58,7 +59,7 @@ class GitIndexEntry(tp.NamedTuple):
 
 
 def read_index(gitdir: pathlib.Path) -> tp.List[GitIndexEntry]:
-    ind = []  # type : ignore
+    ind = []  # type : List[str]
     if not os.path.exists(str(gitdir) + os.path.sep + "index"):
         return ind
     with open(str(gitdir) + os.path.sep + "index", "rb") as f:
