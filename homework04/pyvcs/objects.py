@@ -12,14 +12,14 @@ from pyvcs.repo import repo_find
 
 def hash_object(data: bytes, fmt: str, write: bool = False) -> str:
     objects = "objects"
-    sha = hashlib.sha1((fmt + " " + str(len(data))).encode() + b"\00" + data).hexdigest()
+    final = hashlib.sha1((fmt + " " + str(len(data))).encode() + b"\00" + data).hexdigest()
     if write:
         gitdir = repo_find()
-        if not (gitdir / objects / sha[:2]).exists():
-            (gitdir / objects / sha[:2]).mkdir()
-        with (gitdir / objects / sha[:2] / sha[2:]).open("wb") as file:
+        if not (gitdir / objects / final[:2]).exists():
+            (gitdir / objects / final[:2]).mkdir()
+        with (gitdir / objects / final[:2] / sha[2:]).open("wb") as file:
             file.write(zlib.compress((fmt + " " + str(len(data))).encode() + b"\00" + data))
-    return sha
+    return final
 
 
 def resolve_object(obj_name: str, gitdir: pathlib.Path) -> tp.List[str]:
@@ -41,8 +41,10 @@ def resolve_object(obj_name: str, gitdir: pathlib.Path) -> tp.List[str]:
 
 
 def find_object(obj_name: str, gitdir: pathlib.Path) -> str:
-    # PUT YOUR CODE HERE
-    ...
+    dir_name = obj_name[:2]
+    file_name = obj_name[2:]
+    path = str(gitdir) + "/" + dir_name + "/" + file_name
+    return path
 
 
 def read_object(sha: str, gitdir: pathlib.Path) -> tp.Tuple[str, bytes]:
@@ -88,10 +90,10 @@ def find_tree_files(tree_sha: str, gitdir: pathlib.Path) -> tp.List[tp.Tuple[str
 def commit_parse(raw: bytes, start: int = 0, dct=None):
     ret_val: tp.Dict[str, tp.Any]
     ret_val = {"message": []}
-    for i in raw.decode().split("\n"):
-        if i.startswith(("tree", "parent", "author", "committer")):
-            name, val = i.split(" ", maxsplit=1)
+    for element in raw.decode().split("\n"):
+        if element.startswith(("tree", "parent", "author", "committer")):
+            name, val = element.split(" ", maxsplit=1)
             ret_val[name] = val
         else:
-            ret_val["message"].append(i)
+            ret_val["message"].append(element)
     return ret_val
