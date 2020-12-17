@@ -17,9 +17,10 @@ def add(gitdir: pathlib.Path, paths: tp.List[pathlib.Path]) -> None:
 
 
 def commit(gitdir: pathlib.Path, message: str, author: tp.Optional[str] = None) -> str:
-    tree = write_tree(gitdir, read_index(gitdir))
-    commit = commit_tree(gitdir, tree, message, author=author)
-    return commit
+    parent = resolve_head(gitdir)
+    tree = write_tree(gitdir, read_index(gitdir), str(gitdir.parent))
+    com = commit_tree(gitdir, tree, message, parent, author)
+    return com
 
 
 def checkout(gitdir: pathlib.Path, obj_name: str) -> None:
@@ -28,11 +29,11 @@ def checkout(gitdir: pathlib.Path, obj_name: str) -> None:
             os.remove(entry.name)
         except FileNotFoundError:
             pass
-    commit = commit_parse(read_object(obj_name, gitdir)[1])
+    com = commit_parse(read_object(obj_name, gitdir)[1])
     finished = False
     while not finished:
         trees: tp.List[tp.Tuple[pathlib.Path, tp.List[tp.Tuple[int, str, str]]]]
-        trees = [(gitdir.parent, read_tree(read_object(commit["tree"], gitdir)[1]))]
+        trees = [(gitdir.parent, read_tree(read_object(com["tree"], gitdir)[1]))]
         while trees:
             tree_path, tree_content = trees[-1]
             del trees[-1]
@@ -47,8 +48,8 @@ def checkout(gitdir: pathlib.Path, obj_name: str) -> None:
                         with (tree_path / file_data[1]).open("wb") as f:
                             f.write(data)
                         (tree_path / file_data[1]).chmod(int(str(file_data[0]), 8))
-        if "parent" in commit:
-            commit.append(commit_parse((read_object(commit["parent"], gitdir)[1])))
+        if "parent" in com:
+            com.append(commit_parse((read_object(com["parent"], gitdir)[1])))
         else:
             finished = True
     for dir in gitdir.parent.glob("*"):
