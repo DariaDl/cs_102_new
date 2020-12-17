@@ -1,42 +1,61 @@
-import datetime
 import os
 import pathlib
 import stat
 import time
+import datetime
 import typing as tp
 
-from pyvcs.index import GitIndexEntry, read_index  # type: ignore
-from pyvcs.objects import hash_object  # type: ignore
-from pyvcs.refs import get_ref, is_detached, resolve_head, update_ref  # type: ignore
+from pyvcs.index import GitIndexEntry, read_index
+from pyvcs.objects import hash_object
+from pyvcs.refs import get_ref, is_detached, resolve_head, update_ref
 
 
 def write_tree(gitdir: pathlib.Path, index: tp.List[GitIndexEntry], dirname: str = "") -> str:
-    tree_inputs = []
+    files_list = [x.absolute() for x in (gitdir.parent / dirname).glob("*")]
+    to_add_dirs: tp.Dict[str, tp.List[GitIndexEntry]]
+    to_add_dirs = dict()
+    enties_to_format = []
     for entry in index:
-        _, title = os.path.split(entry.name)
-        if dirname:
-            titles = dirname.split("/")
+        if pathlib.Path(entry.name).absolute() in files_list:
+            enties_to_format.append(entry)
         else:
-            titles = entry.name.split("/")
-        if len(titles) != 1:
-            prefix = titles[0]
-            title = f"/".join(titles[1:])
-            mode = "40000"
-            tree_input = f"{mode} {prefix}\0".encode()
-            tree_input += bytes.fromhex(write_tree(gitdir, index, title))
-            tree_inputs.append(tree_input)
-        else:
-            if dirname and entry.name.find(dirname) == -1:
-                continue
-            with open(entry.name, "rb") as file:
-                info = file.read()
-            mode = str(oct(entry.mode))[2:]
-            tree_input = f"{mode} {title}\0".encode()
-            tree_input += bytes.fromhex(hash_object(info, "blob", write=True))
-            tree_inputs.append(tree_input)
-
-    tree_binary = b"".join(tree_inputs)
-    return hash_object(tree_binary, "tree", write=True)
+            subdir_name = entry.name.lstrip(dirname).split("/", 1)[0]
+            if subdir_name not in to_add_dirs:
+                to_add_dirs[subdir_name] = []
+            to_add_dirs[subdir_name].append(entry)
+    for subdir_name in to_add_dirs:
+        st = (pathlib.Path(gitdir.parent) / dirname / subdir_name).stat()
+        sha = write_tree(
+            gitdir,
+            to_add_dirs[subdir_name],
+            dirname + "/" + subdir_name if dirname != "" else subdir_name,
+        )
+        enties_to_format.append(
+            GitIndexEntry(
+                ctime_s=int(st.st_ctime),
+                ctime_n=st.st_ctime_ns % len(str(int(st.st_ctime))),
+                mtime_s=int(st.st_mtime),
+                mtime_n=st.st_mtime_ns % len(str(int(st.st_mtime))),
+                dev=st.st_dev,
+                ino=st.st_ino,
+                mode=0o40000,
+                uid=st.st_uid,
+                gid=st.st_gid,
+                size=st.st_size,
+                sha1=bytes.fromhex(sha),
+                flags=7,
+                name=str(pathlib.Path(gitdir.parent) / dirname / subdir_name),
+            )
+        )
+    preformatted_data = b"".join(
+        oct(entry.mode)[2:].encode()
+        + b" "
+        + pathlib.Path(entry.name).name.encode()
+        + b"\00"
+        + entry.sha1
+        for entry in sorted(enties_to_format, key=lambda x: x.name)
+    )
+    return hash_object(preformatted_data, "tree", write=True)
 
 
 def commit_tree(
@@ -46,19 +65,19 @@ def commit_tree(
     parent: tp.Optional[str] = None,
     author: tp.Optional[str] = None,
 ) -> str:
-    if "GIT_AUTHOR_NAME" in os.environ and "GET_AUTHOR_EMAIL" in os.environ and author is None:
-        author = (
-            os.getenv("GIT_AUTHOR_NAME", None) + " " + f"<{os.getenv('GIT_AUTHOR_EMAIL', None)}>"  # type: ignore
-        )
-    if time.timezone > 0:
-        timezone = "-"
+    now = int(time.mktime(time.localtime()))
+    timezone = time.timezone
+    if timezone > 0:
+        formatted_timezone = "-"
     else:
-        timezone = "+"
-    timezone += f"{abs(time.timezone) // 60 // 60:02}{abs(time.timezone) // 60 % 60:02}"
-    info = [f"tree {tree}"]
+        formatted_timezone = "+"
+    formatted_timezone += f"{abs(timezone) // 3600:02}{abs(timezone) // 60 % 60:02}"
+    commit_content = []
+    commit_content.append(f"tree {tree}")
     if parent is not None:
-        info.append(f"parent{parent}")
-    info.append(f"author {author} {int(time.mktime(time.localtime()))} {timezone}")
-    info.append(f"committer {author} {int(time.mktime(time.localtime()))} {timezone}")
-    info.append(f"\n{message}\n")
-    return hash_object("\n".join(info).encode(), "commit", write=True)
+        commit_content.append(f"parent {parent}")
+    commit_content.append(f"author {author} {now} {formatted_timezone}")
+    commit_content.append(f"committer {author} {now} {formatted_timezone}")
+    commit_content.append(f"\n{message}\n")
+    data = "\n".join(commit_content).encode()
+    return hash_object(data, "commit", write=True)
