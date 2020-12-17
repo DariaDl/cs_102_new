@@ -58,7 +58,7 @@ class GitIndexEntry(tp.NamedTuple):
 
 
 def read_index(gitdir: pathlib.Path) -> tp.List[GitIndexEntry]:
-    ind = []
+    ind = [] # type : ignore
     if not os.path.exists(str(gitdir) + os.path.sep + "index"):
         return ind
     with open(str(gitdir) + os.path.sep + "index", "rb") as f:
@@ -126,9 +126,9 @@ def ls_files(gitdir: pathlib.Path, details: bool = False) -> None:
     for entry in read_index(gitdir):
         if details:
             stage = (entry.flags >> 12) & 3
-            print("{:6o} {} {:}\t{}".format(entry.mode, entry.sha1.hex(), stage, entry.path))
+            print("{:6o} {} {:}\t{}".format(entry.mode, entry.sha1.hex(), stage, entry.path)) # type : ignore
         else:
-            print(entry.path)
+            print(entry.path) # type : ignore
 
 
 def update_index(gitdir: pathlib.Path, paths: tp.List[pathlib.Path], write: bool = True) -> None:
