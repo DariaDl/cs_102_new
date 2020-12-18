@@ -85,3 +85,4 @@ class RepoFindTestCase(TestCase):
         with self.assertRaises(Exception) as ctx:
             _ = repo.repo_find()
         self.assertEqual("Not a git repository", str(ctx.exception))
+        
