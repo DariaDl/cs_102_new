@@ -129,3 +129,4 @@ class CheckoutTestCase(TestCase):
             self.fs.exists(digits.parent.absolute()),
             msg=f"Каталога `{digits.parent}` не должно существовать",
         )
+        
