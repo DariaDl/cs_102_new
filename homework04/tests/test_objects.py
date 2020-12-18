@@ -196,3 +196,4 @@ class CatFileTestCase(TestCase):
         with patch("sys.stdout", new=io.StringIO()) as out:
             objects.cat_file(sha, pretty=True)
             self.assertEqual(expected_output, out.getvalue().strip())
+            
