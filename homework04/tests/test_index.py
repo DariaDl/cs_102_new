@@ -225,4 +225,5 @@ class UpdateIndexTestCase(TestCase):
         self.assertEqual(
             ["alphabeta/letters.txt", "numbers/digits.txt", "quote.txt"], names
         )
+        
        
