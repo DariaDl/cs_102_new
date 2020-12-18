@@ -65,3 +65,4 @@ class ReferencesTestCase(TestCase):
             sha = f.read().strip()
 
         self.assertEqual(master_sha, sha)
+        
