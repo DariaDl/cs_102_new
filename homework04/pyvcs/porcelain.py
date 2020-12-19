@@ -19,13 +19,14 @@ def add(gitdir: pathlib.Path, paths: tp.List[pathlib.Path]) -> None:
 def commit(gitdir: pathlib.Path, message: str, author: tp.Optional[str] = None) -> str:
     parent = resolve_head(gitdir)
     tree = write_tree(gitdir, read_index(gitdir), str(gitdir.parent))
-    return commit_tree(gitdir, tree, message, parent, author)
+    commit = commit_tree(gitdir, tree, message, parent, author)
+    return commit
 
 
 def checkout(gitdir: pathlib.Path, obj_name: str) -> None:
-    for element in read_index(gitdir):
+    for entry in read_index(gitdir):
         try:
-            os.remove(element.name)
+            os.remove(entry.name)
         except FileNotFoundError:
             pass
     commit = commit_parse(read_object(obj_name, gitdir)[1])
