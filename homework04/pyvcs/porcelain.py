@@ -8,7 +8,7 @@ from pyvcs.objects import (
     find_object,
     find_tree_files,
     read_object,
-    read_tree
+    read_tree,
 )
 from pyvcs.refs import get_ref, is_detached, resolve_head, update_ref
 from pyvcs.tree import commit_tree, write_tree
