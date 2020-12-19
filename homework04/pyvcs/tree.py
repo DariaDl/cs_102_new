@@ -1,24 +1,42 @@
+import datetime
 import os
 import pathlib
 import stat
 import time
 import typing as tp
 
-from pyvcs.index import GitIndexEntry, read_index
-from pyvcs.objects import hash_object
-from pyvcs.refs import get_ref, is_detached, resolve_head, update_ref
+from pyvcs.index import GitIndexEntry, read_index  # type: ignore
+from pyvcs.objects import hash_object  # type: ignore
+from pyvcs.refs import get_ref, is_detached, resolve_head, update_ref  # type: ignore
 
 
 def write_tree(gitdir: pathlib.Path, index: tp.List[GitIndexEntry], dirname: str = "") -> str:
-    """Write a tree object from the current index entries."""
-    tree_entries = []
-    for entry in read_index():
-        assert '/' not in entry.path, \
-                'currently only supports a single, top-level directory'
-        mode_path = '{:o} {}'.format(entry.mode, entry.path).encode()
-        tree_entry = mode_path + b'\x00' + entry.sha
-        tree_entries.append(tree_entry)
-    return hash_object(b''.join(tree_entries), 'tree')
+    tree_inputs = []
+    for entry in index:
+        _, title = os.path.split(entry.name)
+        if dirname:
+            titles = dirname.split("/")
+        else:
+            titles = entry.name.split("/")
+        if len(titles) != 1:
+            prefix = titles[0]
+            title = f"/".join(titles[1:])
+            mode = "40000"
+            tree_input = f"{mode} {prefix}\0".encode()
+            tree_input += bytes.fromhex(write_tree(gitdir, index, title))
+            tree_inputs.append(tree_input)
+        else:
+            if dirname and entry.name.find(dirname) == -1:
+                continue
+            with open(entry.name, "rb") as file:
+                info = file.read()
+            mode = str(oct(entry.mode))[2:]
+            tree_input = f"{mode} {title}\0".encode()
+            tree_input += bytes.fromhex(hash_object(info, "blob", write=True))
+            tree_inputs.append(tree_input)
+
+    tree_binary = b"".join(tree_inputs)
+    return hash_object(tree_binary, "tree", write=True)
 
 
 def commit_tree(
@@ -28,29 +46,19 @@ def commit_tree(
     parent: tp.Optional[str] = None,
     author: tp.Optional[str] = None,
 ) -> str:
-    """Commit the current state of the index to master with given message.
-    Return hash of commit object.
-    """
-    tree = write_tree()
-    parent = get_local_master_hash()
-    timestamp = int(time.mktime(time.localtime()))
-    utc_offset = -time.timezone
-    author_time = '{} {}{:02}{:02}'.format(
-            timestamp,
-            '+' if utc_offset > 0 else '-',
-            abs(utc_offset) // 3600,
-            (abs(utc_offset) // 60) % 60)
-    lines = ['tree ' + tree]
-    if parent:
-        lines.append('parent ' + parent)
-    lines.append('author {} {}'.format(author, author_time))
-    lines.append('committer {} {}'.format(author, author_time))
-    lines.append('')
-    lines.append(message)
-    lines.append('')
-    data = '\n'.join(lines).encode()
-    sha = hash_object(data, 'commit')
-    master_path = os.path.join('.git', 'refs', 'heads', 'master')
-    write_file(master_path, (sha + '\n').encode())
-    print('committed to master: {:7}'.format(sha))
-    return sha
+    if not author:
+        author = (
+            os.getenv("GIT_AUTHOR_NAME") + " " + f"<{os.getenv('GIT_AUTHOR_EMAIL')}>"  # type: ignore
+        )
+    if time.timezone > 0:
+        timezone = "-"
+    else:
+        timezone = "+"
+    timezone += f"{abs(time.timezone) // 60 // 60:02}{abs(time.timezone) // 60 % 60:02}"
+    info = [f"tree {tree}"]
+    if parent is not None:
+        info.append(f"parent{parent}")
+    info.append(f"author {author} {int(time.mktime(time.localtime()))} {timezone}")
+    info.append(f"committer {author} {int(time.mktime(time.localtime()))} {timezone}")
+    info.append(f"\n{message}\n")
+    return hash_object("\n".join(info).encode(), "commit", write=True)
