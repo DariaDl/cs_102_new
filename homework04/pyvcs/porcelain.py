@@ -64,4 +64,3 @@ def checkout(gitdir: pathlib.Path, obj_name: str) -> None:
                 os.removedirs(dir)
             except OSError:
                 continue
-
